@@ -6,30 +6,24 @@ const connectDB = require('./db');
 const apiRoutes = require('./src/api');
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
-// 1. Middlewares obligatorios (CORS debe ir arriba de las rutas)
+// 1. Middlewares obligatorios
 app.use(cors());
 app.use(bodyParser.json());
 
 // 2. Rutas de tu API
 app.use('/api', apiRoutes);
 
-// 3. Función controlada para arrancar el backend
-async function startServer() {
-    console.log("Iniciando componentes del backend...");
-    try {
-        // Esperamos a que MongoDB Atlas dé el banderazo de salida
-        await connectDB();
-        console.log("Conexión establecida con éxito a DBUsuarios");
+// 3. Conexión a la Base de Datos (Mongoose maneja el buffering internamente en Serverless)
+connectDB()
+    .then(() => console.log("Conexión inicial a MongoDB Atlas solicitada..."))
+    .catch(err => console.error("Error inicial de conexión:", err));
 
-        // Hasta que la línea de arriba se cumpla, abrimos las puertas del servidor
-        app.listen(port, () => {
-            console.log("Servidor corriendo en http://localhost:" + port);
-        });
-    } catch (error) {
-        console.error("No se pudo arrancar el servidor:", error);
-    }
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(port, () => {
+        console.log("Servidor corriendo localmente en http://localhost:" + port);
+    });
 }
 
-startServer();
+module.exports = app;
