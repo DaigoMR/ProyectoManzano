@@ -1,17 +1,35 @@
 const express = require('express');
+const cors = require('cors');
 const bodyParser = require('body-parser');
-const cors = require('cors'); // 1. Importa cors
-const api = require('./src/api');
 
-const port = 3000;
+const connectDB = require('./db');
+const apiRoutes = require('./src/api');
+
 const app = express();
+const port = 3000;
 
-app.use(cors()); // 2. Usa cors ANTES de las rutas
-app.use(bodyParser.urlencoded({ extended: true }));
+// 1. Middlewares obligatorios (CORS debe ir arriba de las rutas)
+app.use(cors());
 app.use(bodyParser.json());
 
-app.use('/api', api); 
+// 2. Rutas de tu API
+app.use('/api', apiRoutes);
 
-app.listen(port, function () {
-    console.log("Server is listening at port:" + port);
-});
+// 3. Función controlada para arrancar el backend
+async function startServer() {
+    console.log("Iniciando componentes del backend...");
+    try {
+        // Esperamos a que MongoDB Atlas dé el banderazo de salida
+        await connectDB();
+        console.log("Conexión establecida con éxito a DBUsuarios");
+
+        // Hasta que la línea de arriba se cumpla, abrimos las puertas del servidor
+        app.listen(port, () => {
+            console.log("Servidor corriendo en http://localhost:" + port);
+        });
+    } catch (error) {
+        console.error("No se pudo arrancar el servidor:", error);
+    }
+}
+
+startServer();

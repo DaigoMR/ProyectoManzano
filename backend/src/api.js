@@ -1,85 +1,134 @@
-const mongoose = require('mongoose');
 const express = require('express');
 const router = express.Router();
+
 const ModeloUsuarios = require('./esquemaUsuarios');
 
-// Connecting to database
-const query = 'mongodb://127.0.0.1:27017/DBUsuarios';
-
-const db = (query);
-mongoose.Promise = global.Promise;
-
-mongoose.connect(query)
-    .then(() => console.log("DB conectada"))
-    .catch(err => console.log("Error DB:", err));
-
-module.exports = router;
-
-// CREATE: Auto-asignación de IdUsuario
+// ======================
+// CREATE
+// ======================
 router.post('/guardar', async (req, res) => {
     try {
-        // 1. Buscamos el usuario con el IdUsuario más alto para saber cuál sigue
         const ultimoUsuario = await ModeloUsuarios.findOne().sort({ IdUsuario: -1 });
-        
-        // 2. Si no hay usuarios, empezamos en 1. Si hay, sumamos +1 al máximo encontrado
         const siguienteId = ultimoUsuario ? ultimoUsuario.IdUsuario + 1 : 1;
-        
-        // 3. Creamos el nuevo registro inyectando el ID generado
+
         const nuevoUsuario = new ModeloUsuarios({
             ...req.body,
             IdUsuario: siguienteId
         });
 
         await nuevoUsuario.save();
-        res.send("Datos insertados correctamente con ID: " + siguienteId);
+
+        // Usamos .json() para mantener consistencia
+        return res.status(201).json({
+            mensaje: "Datos insertados correctamente",
+            id: siguienteId
+        });
+
     } catch (error) {
-        console.error("Error al guardar:", error);
-        res.status(500).send("Error interno al generar ID");
+        console.error("ERROR CREATE:", error);
+        // Devolvemos JSON en lugar de texto plano
+        return res.status(500).json({ 
+            error: "Error al guardar el usuario", 
+            detalles: error.message 
+        });
     }
 });
 
+// ======================
 // READ ALL
+// ======================
 router.get('/listar', async (req, res) => {
-    const data = await ModeloUsuarios.find();
-    res.send(data);
+    try {
+        const data = await ModeloUsuarios.find();
+        return res.json(data);
+    } catch (error) {
+        console.error("ERROR LISTAR:", error);
+        // Cambiado .send() por .json() para que React no truene con el HTML
+        return res.status(500).json({ 
+            error: "Error al obtener la lista de usuarios", 
+            detalles: error.message 
+        });
+    }
 });
 
+// ======================
 // READ ONE
+// ======================
 router.get('/obtener/:id', async (req, res) => {
-    const data = await ModeloUsuarios.findOne({ IdUsuario: req.params.id });
-    res.send(data);
+    try {
+        const data = await ModeloUsuarios.findOne({
+            IdUsuario: Number(req.params.id)
+        });
+        return res.json(data);
+    } catch (error) {
+        console.error("ERROR OBTENER:", error);
+        return res.status(500).json({ 
+            error: "Error al obtener el usuario", 
+            detalles: error.message 
+        });
+    }
 });
 
-// UPDATE: Validación de ID
+// ======================
+// UPDATE
+// ======================
 router.put('/actualizar/:id', async (req, res) => {
-    // Si el ID es inválido, detenemos la ejecución antes de que Mongoose falle
     if (!req.params.id || req.params.id === 'undefined') {
-        return res.status(400).send("Error: No se recibió un ID válido para actualizar.");
+        return res.status(400).json({ error: "ID inválido" });
     }
 
     try {
         const data = await ModeloUsuarios.findOneAndUpdate(
-            { IdUsuario: req.params.id }, 
+            { IdUsuario: Number(req.params.id) },
             req.body,
             { new: true }
         );
-        res.send("Datos actualizados");
+
+        if (!data) {
+            return res.status(404).json({ error: "Usuario no encontrado" });
+        }
+
+        return res.json({
+            mensaje: "Actualizado correctamente",
+            usuario: data
+        });
+
     } catch (error) {
-        res.status(500).send("Error al actualizar");
+        console.error("ERROR UPDATE:", error);
+        return res.status(500).json({ 
+            error: "Error al actualizar el usuario", 
+            detalles: error.message 
+        });
     }
 });
 
-// DELETE: Validación de ID
+// ======================
+// DELETE
+// ======================
 router.delete('/eliminar/:id', async (req, res) => {
     if (!req.params.id || req.params.id === 'undefined') {
-        return res.status(400).send("Error: No se puede eliminar un registro sin ID.");
+        return res.status(400).json({ error: "ID inválido" });
     }
 
     try {
-        await ModeloUsuarios.findOneAndDelete({ IdUsuario: req.params.id });
-        res.send("Eliminado");
+        const eliminado = await ModeloUsuarios.findOneAndDelete({
+            IdUsuario: Number(req.params.id)
+        });
+
+        if (!eliminado) {
+            return res.status(404).json({ error: "Usuario no encontrado" });
+        }
+
+        return res.json({
+            mensaje: "Eliminado correctamente"
+        });
+
     } catch (error) {
-        res.status(500).send("Error al eliminar");
+        console.error("ERROR DELETE:", error);
+        return res.status(500).json({ 
+            error: "Error al eliminar el usuario", 
+            detalles: error.message 
+        });
     }
 });
 

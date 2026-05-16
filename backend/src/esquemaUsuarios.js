@@ -8,5 +8,4 @@ const EsquemaUsuarios = new mongoose.Schema({
     Direccion: String
 });
 
-module.exports = mongoose.model(
-    'usuario', EsquemaUsuarios, 'Usuarios');
+module.exports = mongoose.model('Usuario', EsquemaUsuarios, 'Usuarios');

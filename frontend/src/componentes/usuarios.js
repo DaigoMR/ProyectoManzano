@@ -24,7 +24,6 @@ export async function guardarUsuario(usuario) {
       body: JSON.stringify(usuario)
    });
 
-   // Cambiamos a .text() para evitar el error de "Unexpected token D"
    return await res.text();
 }
 
