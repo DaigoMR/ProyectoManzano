@@ -12,7 +12,10 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// 2. Rutas de tu API
+// Acepta las peticiones si Vercel ya les quitó el prefijo "/api"
+app.use('/', apiRoutes); 
+
+// Mantiene esta por si acaso en local lo necesitas
 app.use('/api', apiRoutes);
 
 // 3. Conexión a la Base de Datos (Mongoose maneja el buffering internamente en Serverless)
